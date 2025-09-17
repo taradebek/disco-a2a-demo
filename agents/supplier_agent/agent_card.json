@@ -1,0 +1,159 @@
+{
+  "agent_id": "supplier_agent",
+  "name": "Office Supplies Supplier Agent",
+  "description": "Provides office supplies inventory, pricing, and order fulfillment",
+  "version": "1.0.0",
+  "status": "active",
+  "capabilities": [
+    {
+      "name": "supply",
+      "description": "General supply and inventory management capabilities",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_type": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "supply",
+      "description": "General supply and inventory management capabilities",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_type": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "check_inventory",
+      "description": "Check product availability and quantities",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "available_products": {
+            "type": "array"
+          },
+          "unavailable_products": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    {
+      "name": "generate_quote",
+      "description": "Generate pricing quotes for requested products",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "products": {
+            "type": "array"
+          },
+          "delivery_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "special_requirements": {
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "quote_id": {
+            "type": "string"
+          },
+          "total_amount": {
+            "type": "number"
+          },
+          "products": {
+            "type": "array"
+          },
+          "delivery_time": {
+            "type": "string"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    {
+      "name": "process_order",
+      "description": "Process and fulfill customer orders",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "products": {
+            "type": "array"
+          },
+          "shipping_address": {
+            "type": "object"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tracking_number": {
+            "type": "string"
+          },
+          "estimated_delivery": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  ]
+}

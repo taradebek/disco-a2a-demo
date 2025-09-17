@@ -1,0 +1,75 @@
+{
+  "agent_id": "procurement_agent",
+  "name": "Procurement Agent",
+  "description": "Handles purchase requests and supplier negotiations for office supplies",
+  "version": "1.0.0",
+  "status": "active",
+  "capabilities": [
+    {
+      "name": "create_purchase_request",
+      "description": "Create a new purchase request for office supplies",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {"type": "string"},
+                "quantity": {"type": "integer"},
+                "specifications": {"type": "string"}
+              }
+            }
+          },
+          "budget_limit": {"type": "number"},
+          "delivery_date": {"type": "string", "format": "date-time"}
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {"type": "string"},
+          "status": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "evaluate_quote",
+      "description": "Evaluate supplier quotes and make purchasing decisions",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "quote": {"type": "object"},
+          "budget_limit": {"type": "number"},
+          "requirements": {"type": "object"}
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "decision": {"type": "string"},
+          "reasoning": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "place_order",
+      "description": "Place an order with a supplier",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "quote_id": {"type": "string"},
+          "shipping_address": {"type": "object"}
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "order_id": {"type": "string"},
+          "status": {"type": "string"}
+        }
+      }
+    }
+  ]
+}

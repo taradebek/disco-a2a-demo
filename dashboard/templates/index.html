@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2A Agent Interaction Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 40px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: -30px;
+            width: 2px;
+            background: #dee2e6;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6c757d;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 3px #dee2e6;
+        }
+        .timeline-marker.success {
+            background: #28a745;
+        }
+        .timeline-marker.error {
+            background: #dc3545;
+        }
+        .timeline-marker.in-progress {
+            background: #ffc107;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .agent-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .message-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .step-counter {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .event-card {
+            transition: all 0.3s ease;
+        }
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .capability-badge {
+            font-size: 0.7em;
+            margin: 1px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Connection Status -->
+        <div class="connection-status">
+            <span id="connection-status" class="badge bg-secondary">
+                <i class="fas fa-circle me-1"></i>Disconnected
+            </span>
+        </div>
+
+        <div class="row">
+            <!-- Header -->
+            <div class="col-12">
+                <div class="bg-primary text-white p-3 mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-robot me-2"></i>
+                        A2A Agent Interaction Dashboard
+                    </h1>
+                    <p class="mb-0">Real-time monitoring of Agent-to-Agent communication</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Agent Status Panel -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>Agent Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agent-status">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Procurement Agent</span>
+                                <span class="agent-status status-active" id="proc-status">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Supplier Agent</span>
+                                <span class="agent-status status-active" id="supp-status">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Step -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-play-circle me-2"></i>Current Step
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="step-counter" id="current-step">0</div>
+                        <div class="progress mt-2">
+                            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted" id="step-description">Waiting for agents to start...</small>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="card mb-4 stats-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="fas fa-chart-bar me-2"></i>Statistics
+                        </h5>
+                    </div>
+                    <div class="card-body text-white">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="h4 mb-0" id="total-events">0</div>
+                                <small>Events</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="h4 mb-0" id="total-messages">0</div>
+                                <small>Messages</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>Controls
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary btn-sm w-100 mb-2" onclick="startDemo()">
+                            <i class="fas fa-play me-2"></i>Start Demo
+                        </button>
+                        <button class="btn btn-secondary btn-sm w-100 mb-2" onclick="resetDemo()">
+                            <i class="fas fa-refresh me-2"></i>Reset
+                        </button>
+                        <button class="btn btn-info btn-sm w-100 mb-2" onclick="refreshStatus()">
+                            <i class="fas fa-sync me-2"></i>Refresh Status
+                        </button>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="auto-scroll" checked>
+                            <label class="form-check-label" for="auto-scroll">
+                                Auto-scroll timeline
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="sound-alerts" checked>
+                            <label class="form-check-label" for="sound-alerts">
+                                Sound alerts
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Timeline -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2"></i>Interaction Timeline
+                        </h5>
+                        <span class="badge bg-primary" id="timeline-count">0 events</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline" id="timeline">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-clock fa-2x mb-2"></i>
+                                <p>Waiting for agent interactions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Log -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comments me-2"></i>Live Messages
+                        </h5>
+                        <span class="badge bg-success" id="message-count">0 messages</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="message-log" id="message-log">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                                <p>No messages yet...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let ws = null;
+        let currentStep = 0;
+        let totalSteps = 10;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let messageCount = 0;
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+                updateConnectionStatus(true);
+                reconnectAttempts = 0;
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+                
+                // Attempt to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                    setTimeout(connectWebSocket, 3000);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus(false);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            if (data.type === 'initial_data') {
+                // Load initial data
+                loadEventHistory(data.event_history);
+                updateAgentStatus(data.agent_status);
+                updateStatistics(data);
+            } else if (data.step_number) {
+                // New event
+                addTimelineEvent(data);
+                updateCurrentStep(data.step_number);
+                addMessageLog(data);
+                updateStatistics();
+                
+                // Play sound alert if enabled
+                if (document.getElementById('sound-alerts').checked) {
+                    playNotificationSound();
+                }
+            } else if (data.type === 'status_update') {
+                updateAgentStatus(data.agent_status);
+                updateStatistics(data);
+            }
+        }
+
+        function addTimelineEvent(event) {
+            const timeline = document.getElementById('timeline');
+            
+            // Remove "waiting" message if it exists
+            const waitingMsg = timeline.querySelector('.text-center');
+            if (waitingMsg) {
+                waitingMsg.remove();
+            }
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'timeline-item event-card';
+            eventDiv.innerHTML = `
+                <div class="timeline-marker ${event.success ? 'success' : 'error'}"></div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="card-title mb-1">Step ${event.step_number}: ${event.description}</h6>
+                            <small class="text-muted">${new Date(event.timestamp).toLocaleTimeString()}</small>
+                        </div>
+                        <p class="card-text text-muted mb-1">
+                            <strong>Agent:</strong> ${event.agent_id.replace('_', ' ').toUpperCase()}
+                        </p>
+                        <p class="card-text text-muted mb-0">
+                            <strong>Type:</strong> ${event.event_type.replace('_', ' ').toUpperCase()}
+                        </p>
+                        ${event.data && Object.keys(event.data).length > 0 ? `
+                            <details class="mt-2">
+                                <summary class="text-primary" style="cursor: pointer;">View Details</summary>
+                                <pre class="mt-2 small">${JSON.stringify(event.data, null, 2)}</pre>
+                            </details>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            timeline.appendChild(eventDiv);
+            
+            // Update timeline count
+            const timelineCount = document.getElementById('timeline-count');
+            timelineCount.textContent = `${timeline.children.length} events`;
+            
+            // Auto-scroll if enabled
+            if (document.getElementById('auto-scroll').checked) {
+                eventDiv.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function addMessageLog(event) {
+            const messageLog = document.getElementById('message-log');
+            
+            // Remove "no messages" message if it exists
+            const noMsgDiv = messageLog.querySelector('.text-center');
+            if (noMsgDiv) {
+                noMsgDiv.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'border-bottom pb-2 mb-2';
+            messageDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <strong class="text-primary">${event.agent_id.replace('_', ' ')}</strong>
+                    <small class="text-muted">${new Date(event.timestamp).toLocaleTimeString()}</small>
+                </div>
+                <p class="mb-1 small">${event.description}</p>
+                <span class="badge ${event.success ? 'bg-success' : 'bg-danger'}">${event.event_type}</span>
+            `;
+            
+            messageLog.insertBefore(messageDiv, messageLog.firstChild);
+            messageCount++;
+            
+            // Update message count
+            const messageCountEl = document.getElementById('message-count');
+            messageCountEl.textContent = `${messageCount} messages`;
+            
+            // Keep only last 20 messages
+            while (messageLog.children.length > 20) {
+                messageLog.removeChild(messageLog.lastChild);
+            }
+        }
+
+        function updateCurrentStep(stepNumber) {
+            currentStep = stepNumber;
+            document.getElementById('current-step').textContent = stepNumber;
+            
+            const progress = Math.min((stepNumber / totalSteps) * 100, 100);
+            document.getElementById('progress-bar').style.width = progress + '%';
+            
+            // Update step description
+            const descriptions = [
+                'Waiting for agents to start...',
+                'Agent discovery and registration',
+                'Creating purchase request',
+                'Sending quote request to supplier',
+                'Supplier checking inventory',
+                'Generating quote and pricing',
+                'Evaluating quote and making decision',
+                'Placing order with supplier',
+                'Processing order and confirmation',
+                'Order shipped with tracking',
+                'Delivery completed'
+            ];
+            
+            const description = descriptions[Math.min(stepNumber, descriptions.length - 1)];
+            document.getElementById('step-description').textContent = description;
+        }
+
+        function updateAgentStatus(agentStatus) {
+            // Update agent status indicators
+            Object.keys(agentStatus).forEach(agentId => {
+                const status = agentStatus[agentId];
+                const statusElement = document.getElementById(agentId.replace('_', '-') + '-status');
+                if (statusElement) {
+                    statusElement.textContent = status.status === 'active' ? 'Active' : 'Error';
+                    statusElement.className = `agent-status ${status.status === 'active' ? 'status-active' : 'status-error'}`;
+                }
+            });
+        }
+
+        function updateStatistics(data = null) {
+            if (data) {
+                if (data.event_history) {
+                    document.getElementById('total-events').textContent = data.event_history.length;
+                }
+                if (data.agent_status) {
+                    // Update message count based on agent activity
+                    const totalMessages = Object.keys(data.agent_status).length;
+                    document.getElementById('total-messages').textContent = totalMessages;
+                }
+            }
+        }
+
+        function loadEventHistory(events) {
+            events.forEach(event => {
+                addTimelineEvent(event);
+                updateCurrentStep(event.step_number);
+            });
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connection-status');
+            if (connected) {
+                statusElement.innerHTML = '<i class="fas fa-circle me-1"></i>Connected';
+                statusElement.className = 'badge bg-success';
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-circle me-1"></i>Disconnected';
+                statusElement.className = 'badge bg-danger';
+            }
+        }
+
+        function playNotificationSound() {
+            // Create a simple notification sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function startDemo() {
+            fetch('/api/start-demo', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('Demo started:', data.message);
+                    } else {
+                        console.error('Error starting demo:', data.message);
+                    }
+                })
+                .catch(error => console.error('Error starting demo:', error));
+        }
+
+        function resetDemo() {
+            // Reset the dashboard
+            document.getElementById('timeline').innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <p>Waiting for agent interactions...</p>
+                </div>
+            `;
+            document.getElementById('message-log').innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                    <p>No messages yet...</p>
+                </div>
+            `;
+            document.getElementById('timeline-count').textContent = '0 events';
+            document.getElementById('message-count').textContent = '0 messages';
+            messageCount = 0;
+            updateCurrentStep(0);
+        }
+
+        function refreshStatus() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'get_status' }));
+            }
+        }
+
+        // Send ping every 30 seconds to keep connection alive
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
