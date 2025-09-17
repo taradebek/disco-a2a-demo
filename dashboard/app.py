@@ -1,6 +1,5 @@
 from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import json
 import asyncio
@@ -9,8 +8,6 @@ from a2a_protocol.event_broadcaster import event_broadcaster
 
 app = FastAPI(title="A2A Agent Interaction Dashboard")
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory="dashboard/templates")
