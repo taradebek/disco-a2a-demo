@@ -240,7 +240,7 @@
 
 
 
-        .stats-card{background:linear-gradient(135deg,var(--brand-primary),var(--brand-accent)) !important;}
+
 
         .timeline {
             position: relative;
@@ -436,26 +436,7 @@
                     </div>
                 </div>
 
-                <!-- Statistics -->
-                <div class="card mb-4 stats-card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0 text-white">
-                            <i class="fas fa-chart-bar me-2"></i>Statistics
-                        </h5>
-                    </div>
-                    <div class="card-body text-white">
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="h4 mb-0" id="total-events">0</div>
-                                <small>Events</small>
-                            </div>
-                            <div class="col-6">
-                                <div class="h4 mb-0" id="total-messages">0</div>
-                                <small>Messages</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- Controls -->
                 <div class="card">
@@ -583,13 +564,13 @@
                 // Load initial data
                 loadEventHistory(data.event_history);
                 updateAgentStatus(data.agent_status);
-                updateStatistics(data);
+
             } else if (data.step_number) {
                 // New event
                 addTimelineEvent(data);
                 updateCurrentStep(data.step_number);
                 addMessageLog(data);
-                updateStatistics();
+
                 
                 // Play sound alert if enabled
                 if (document.getElementById('sound-alerts').checked) {
@@ -597,7 +578,7 @@
                 }
             } else if (data.type === 'status_update') {
                 updateAgentStatus(data.agent_status);
-                updateStatistics(data);
+
             }
         }
 
@@ -719,18 +700,7 @@
             });
         }
 
-        function updateStatistics(data = null) {
-            if (data) {
-                if (data.event_history) {
-                    document.getElementById('total-events').textContent = data.event_history.length;
-                }
-                if (data.agent_status) {
-                    // Update message count based on agent activity
-                    const totalMessages = Object.keys(data.agent_status).length;
-                    document.getElementById('total-messages').textContent = totalMessages;
-                }
-            }
-        }
+
 
         function loadEventHistory(events) {
             events.forEach(event => {
