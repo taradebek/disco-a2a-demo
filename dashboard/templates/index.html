@@ -36,6 +36,34 @@
         .bg-primary{background:linear-gradient(135deg,var(--brand-primary),var(--brand-accent)) !important;}
         .btn-primary{background:linear-gradient(135deg,var(--brand-primary),var(--brand-primary-700));border:none;color:#08111f;font-weight:600;}
         .btn-primary:hover{background:linear-gradient(135deg,var(--brand-primary-700),var(--brand-primary));transform:translateY(-1px);}
+
+        .book-call-btn {
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-700) 100%);
+            color: #08111f !important;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none !important;
+            font-size: 0.9em;
+            border: 1px solid rgba(0,227,162,0.3);
+            box-shadow: 0 4px 12px rgba(0,227,162,0.2);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .book-call-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,227,162,0.3);
+            color: #06101d !important;
+        }
+        .book-call-btn:active {
+            transform: translateY(0);
+        }
+        .book-call-btn i {
+            font-size: 0.8em;
+        }
+
         .stats-card{background:linear-gradient(135deg,var(--brand-primary),var(--brand-accent)) !important;}
 
         .timeline {
@@ -142,7 +170,10 @@
                     <span class="brand-name">Disco</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <a href="https://calendly.com/tara-paywithdisco/30min" target="_blank" rel="noopener" class="small text-decoration-none" style="color:var(--brand-primary)">Book a call</a>
+                    <a href="https://calendly.com/tara-paywithdisco/30min" target="_blank" rel="noopener" class="book-call-btn">
+                        <i class="fas fa-calendar-alt"></i>
+                        Book a call
+                    </a>
                     <div class="brand-tag small">Enterprise-grade agent-to-agent payments</div>
                 </div>
             </div>
