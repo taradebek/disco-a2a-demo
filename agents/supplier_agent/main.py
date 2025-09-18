@@ -210,7 +210,7 @@ class SupplierAgent(BaseAgent):
         
         return order_result
     
- 
+
     async def _generate_invoice(self, order_result: Dict[str, Any], total_amount: float):
         """Generate an invoice for the completed order"""
         invoice_id = f"INV-{order_result['order_id'][:8].upper()}"
@@ -230,7 +230,7 @@ class SupplierAgent(BaseAgent):
         }, f"Invoice {invoice_id} generated for order {order_result['order_id']}")
         
         return invoice_data
- 
+
     async def _handle_json_message(self, message):
         """Handle incoming JSON messages"""
         content = message.parts[0].content
@@ -260,7 +260,7 @@ class SupplierAgent(BaseAgent):
             order_result = self.orders.get(order_id, {"order_id": order_id})
             invoice = await self._generate_invoice(order_result, amount)
             await self.send_response(message, invoice)
- 
+    
     async def _handle_inventory_check(self, task_data):
         """Handle inventory check tasks"""
         products = task_data.get('products', [])
