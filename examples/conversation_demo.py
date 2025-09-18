@@ -59,11 +59,15 @@ async def run_conversation_demo():
     procurement_task = asyncio.create_task(procurement_agent.process_messages())
     supplier_task = asyncio.create_task(supplier_agent.process_messages())
     
+    # Give agents time to start processing
+    await asyncio.sleep(3)
+    
     # Let the agents communicate for a while with periodic updates
-    for i in range(15):  # 15 seconds total
+    print("⏱️  Agents will communicate for 30 seconds...")
+    for i in range(30):  # 30 seconds total (doubled the time)
         await asyncio.sleep(1)
-        if i % 3 == 0:  # Update every 3 seconds
-            print(f"⏱️  {15-i} seconds remaining...")
+        if i % 5 == 0:  # Update every 5 seconds
+            print(f"⏱️  {30-i} seconds remaining...")
     
     # Step 6: Final status
     print("\n📊 Step 6: Final Status Check...")
@@ -138,8 +142,11 @@ async def run_step_by_step_demo():
     supplier_task = asyncio.create_task(supplier_agent.process_messages())
     
     # Let it run for a while
-    print("Agents are now communicating...")
-    await asyncio.sleep(10)
+    print("⏱️  Agents will communicate for 45 seconds...")
+    for i in range(45):  # 45 seconds (more time for step-by-step)
+        await asyncio.sleep(1)
+        if i % 5 == 0:
+            print(f"⏱️  {45-i} seconds remaining...")
     
     # Stop and show results
     procurement_task.cancel()
