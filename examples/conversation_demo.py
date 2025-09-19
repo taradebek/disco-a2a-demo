@@ -6,6 +6,7 @@ from agents.supplier_agent.main import supplier_agent
 from a2a_protocol.event_broadcaster import event_broadcaster
 import webbrowser
 import base64
+
 def generate_invoice_pdf(event_history, request_id):
     """Generate a PDF invoice from the completed transaction"""
     from reportlab.lib.pagesizes import letter
@@ -43,7 +44,7 @@ def generate_invoice_pdf(event_history, request_id):
     story = []
     
     # Title
-    story.append(Paragraph("Disco Agent Transaction Invoice", title_style))
+    story.append(Paragraph("Disco A2A Transaction Invoice", title_style))
     story.append(Spacer(1, 20))
     
     # Invoice details
@@ -167,13 +168,13 @@ async def run_conversation_demo():
     for supplier in suppliers:
         quote_request_id = await procurement_agent.request_quote(supplier, products)
         print(f"✅ Quote request sent to {supplier}: {quote_request_id}")
-        await asyncio.sleep(5)  # Give more time for registration  # Pause between each request
+        await asyncio.sleep(5)  # Pause between each request
     
     if not suppliers:
         print("⚠️  No suppliers found, but we'll continue with the demo...")
-        await asyncio.sleep(5)  # Give more time for registration
+        await asyncio.sleep(5)
     
-    # Step 5: Start message processing
+    # Step 5: Start message processing with individual event delays
     print("\n📨 Step 5: Starting Real-time Communication...")
     print("🔄 Agents are now communicating in real-time...")
     print("📱 Watch the conversation interface for live updates!")
@@ -185,12 +186,44 @@ async def run_conversation_demo():
     # Give agents time to start processing
     await asyncio.sleep(3)
     
-    # Let the agents communicate for a while with periodic updates
-    print("⏱️  Agents will communicate for 30 seconds...")
-    for i in range(30):  # 30 seconds total (doubled the time)
-        await asyncio.sleep(1)
-        if i % 5 == 0:  # Update every 5 seconds
-            print(f"⏱️  {30-i} seconds remaining...")
+    # Monitor events and add delays after EACH individual event
+    print("⏱️  Agents will communicate with individual event delays...")
+    initial_event_count = len(event_broadcaster.event_history)
+    last_event_count = initial_event_count
+    
+    # Run for up to 90 seconds with individual event pacing
+    for i in range(90):  # 90 seconds max
+        await asyncio.sleep(0.5)  # Check every 0.5 seconds
+        
+        # Check current event count
+        current_event_count = len(event_broadcaster.event_history)
+        
+        # If we have new events, add a delay after each one
+        if current_event_count > last_event_count:
+            new_events = current_event_count - last_event_count
+            print(f"📡 {new_events} new event(s) detected, adding visibility delay...")
+            
+            # Add delay for each new event (1.5 seconds per event)
+            for _ in range(new_events):
+                await asyncio.sleep(1.5)  # 1.5 second pause after each individual event
+            
+            last_event_count = current_event_count
+        
+        # Update every 15 seconds
+        if i % 30 == 0 and i > 0:  # Every 15 seconds (30 * 0.5)
+            print(f"⏱️  {90-i} seconds remaining... Events so far: {current_event_count}")
+        
+        # Check if we have all completion events
+        events = event_broadcaster.get_event_history()
+        has_order = any(e.get('event_type') == 'order_placed' for e in events)
+        has_payment_sent = any(e.get('event_type') == 'payment_sent' for e in events)
+        has_payment_received = any(e.get('event_type') == 'payment_received' for e in events)
+        has_invoice = any(e.get('event_type') == 'invoice_generated' for e in events)
+        
+        # If all key events are complete, we can finish early
+        if has_order and has_payment_sent and has_payment_received and has_invoice:
+            print("🎉 All key events completed! Transaction finished successfully.")
+            break
     
     # Step 6: Final status
     print("\n📊 Step 6: Final Status Check...")

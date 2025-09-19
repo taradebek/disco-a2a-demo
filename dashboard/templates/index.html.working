@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disco Agent Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        :root{
+            --brand-bg:#0b1020;           /* deep navy background */
+            --brand-surface:#11162a;      /* dark surface */
+            --brand-card:#151b31;         /* card base */
+            --brand-text:#e6e8f0;         /* primary text */
+            --brand-muted:#9aa3b2;        /* muted text */
+            --brand-primary:#00e3a2;      /* Disco emerald */
+            --brand-primary-700:#00c58d;
+            --brand-accent:#6c5ce7;       /* purple accent */
+            --brand-warning:#ffc107;
+            --brand-danger:#ff5c69;
+            --border:#1f2745;
+            --shadow:0 10px 30px rgba(0,0,0,0.2625);
+        }
+        body{background:linear-gradient(180deg,var(--brand-bg),#0e1430);color:var(--brand-text);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;}
+        .navbar-branding{position:sticky;top:0;z-index:1040;background:rgba(11,16,32,0.85);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--border);} 
+        .navbar-branding .brand-badge{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:999px;background:linear-gradient(135deg,rgba(0,227,162,0.15),rgba(108,92,231,0.15));border:1px solid rgba(255,255,255,0.08);} 
+        .navbar-branding .brand-dot{width:10px;height:10px;border-radius:50%;background:var(--brand-primary);box-shadow:0 0 9px var(--brand-primary);} 
+        .navbar-branding .brand-name{font-weight:700;letter-spacing:0.3px;color:var(--brand-text);} 
+        .navbar-branding .brand-tag{color:var(--brand-muted);font-weight:500;}
+        .card{background:var(--brand-card);border:1px solid var(--border);color:var(--brand-text);}
+        .card-header{background:var(--brand-surface);border-bottom:1px solid var(--border);}
+        .bg-primary{background:linear-gradient(135deg,var(--brand-primary),var(--brand-accent)) !important;}
+        .btn-primary{background:linear-gradient(135deg,var(--brand-primary),var(--brand-primary-700));border:none;color:#08111f;font-weight:600;}
+        .btn-primary:hover{background:linear-gradient(135deg,var(--brand-primary-700),var(--brand-primary));transform:translateY(-1px);}
+
+        .book-call-btn {
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-700) 100%);
+            color: #08111f !important;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none !important;
+            font-size: 0.9em;
+            border: 1px solid rgba(0,227,162,0.3);
+            box-shadow: 0 4px 12px rgba(0,227,162,0.2);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .book-call-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,227,162,0.3);
+            color: #06101d !important;
+        }
+        .book-call-btn:active {
+            transform: translateY(0);
+        }
+        .book-call-btn i {
+            font-size: 0.8em;
+        }
+
+
+        .scenario-header {
+            background: linear-gradient(135deg, var(--brand-surface) 0%, var(--brand-card) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 17px;
+            box-shadow: var(--shadow);
+        }
+        .scenario-content {
+            text-align: center;
+        }
+        .scenario-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--brand-text);
+            margin-bottom: 11px;
+            letter-spacing: -0.3px;
+        }
+        .scenario-title i {
+            color: var(--brand-primary);
+        }
+        .scenario-description {
+            font-size: 0.9em;
+            color: var(--brand-muted);
+            line-height: 1.4;
+            margin-bottom: 17px;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .scenario-details {
+            display: flex;
+            justify-content: center;
+            gap: 22px;
+            flex-wrap: wrap;
+            margin-top: 17px;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--brand-text);
+            font-weight: 500;
+            background: rgba(0,227,162,0.08);
+            padding: 8px 11px;
+            border-radius: 6px;
+            border: 1px solid rgba(0,227,162,0.2);
+            font-size: 0.85em;
+        }
+        .detail-item i {
+            color: var(--brand-primary);
+            font-size: 0.8em;
+        }
+        @media (max-width: 768px) {
+            .scenario-details {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .scenario-title {
+                font-size: 1.3em;
+            }
+        }
+
+
+        .timeline-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px 0;
+            border-radius: 8px;
+            background: var(--brand-surface);
+            border: 1px solid var(--border);
+        }
+        .timeline-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .timeline-container::-webkit-scrollbar-track {
+            background: var(--brand-bg);
+            border-radius: 3px;
+        }
+        .timeline-container::-webkit-scrollbar-thumb {
+            background: var(--brand-primary);
+            border-radius: 3px;
+        }
+        .timeline-container::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-primary-700);
+        }
+        .timeline {
+            position: relative;
+            padding: 0;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding-left: 40px;
+            padding-right: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: -20px;
+            width: 2px;
+            background: var(--border);
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--brand-muted);
+            border: 3px solid var(--brand-surface);
+            box-shadow: 0 0 0 3px var(--border);
+        }
+        .timeline-marker.success {
+            background: var(--brand-primary);
+        }
+        .timeline-marker.error {
+            background: var(--brand-danger);
+        }
+        .timeline-marker.in-progress {
+            background: var(--brand-warning);
+            animation: pulse 2s infinite;
+        }
+        .timeline-card {
+            background: var(--brand-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .timeline-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .timeline-card .card-title {
+            color: var(--brand-text);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .timeline-card .card-text {
+            color: var(--brand-muted);
+            font-size: 0.9em;
+        }
+        .timeline-card .timestamp {
+            color: var(--brand-muted);
+            font-size: 0.8em;
+        }
+        .timeline-card .agent-name {
+            color: var(--brand-primary);
+            font-weight: 500;
+        }
+        .timeline-card .event-type {
+            color: var(--brand-accent);
+            font-weight: 500;
+        }
+        .timeline-empty {
+            text-align: center;
+            color: var(--brand-muted);
+            padding: 40px 20px;
+        }
+        .timeline-empty i {
+            font-size: 2em;
+            margin-bottom: 16px;
+            color: var(--brand-muted);
+        }
+
+
+
+
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 40px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: -30px;
+            width: 2px;
+            background: #dee2e6;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6c757d;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 3px #dee2e6;
+        }
+        .timeline-marker.success {
+            background: #28a745;
+        }
+        .timeline-marker.error {
+            background: #dc3545;
+        }
+        .timeline-marker.in-progress {
+            background: #ffc107;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .agent-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .message-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .step-counter {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .event-card {
+            transition: all 0.3s ease;
+        }
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .capability-badge {
+            font-size: 0.7em;
+            margin: 1px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+        <!-- Branded Navbar/Header -->
+    <div class="navbar-branding">
+        <div class="container-fluid py-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2 brand-badge">
+                    <span class="brand-dot"></span>
+                    <span class="brand-name">Disco</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="https://calendly.com/tara-paywithdisco/30min" target="_blank" rel="noopener" class="book-call-btn">
+                        <i class="fas fa-calendar-alt"></i>
+                        Book a call
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="container-fluid">
+        <!-- Connection Status -->
+        <div class="connection-status">
+            <span id="connection-status" class="badge bg-secondary">
+                <i class="fas fa-circle me-1"></i>Disconnected
+            </span>
+        </div>
+
+        <div class="row">
+            <!-- Scenario Description -->
+            <div class="col-12">
+                <div class="scenario-header">
+                    <div class="scenario-content">
+                        <h1 class="scenario-title">
+                            <i class="fas fa-building me-3"></i>
+                            Office Supply Procurement Scenario
+                        </h1>
+                        <p class="scenario-description">
+                            A procurement agent needs to purchase office supplies within a $1,200 budget. 
+                            Watch as it discovers suppliers, negotiates pricing, and completes the transaction 
+                            through autonomous agent-to-agent communication powered by Disco's payment protocol.
+                        </p>
+                        <div class="scenario-details">
+                            <div class="detail-item">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>50x A4 Paper, 20x Black Pens, 10x Staplers</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-dollar-sign"></i>
+                                <span>Budget: $1,200 maximum</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-robot"></i>
+                                <span>Fully autonomous agent negotiation</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Agent Status Panel -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>Agent Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agent-status">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Procurement Agent</span>
+                                <span class="agent-status status-active" id="proc-status">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Supplier Agent</span>
+                                <span class="agent-status status-active" id="supp-status">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Step -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-play-circle me-2"></i>Current Step
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="step-counter" id="current-step">0</div>
+                        <div class="progress mt-2">
+                            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted" id="step-description">Waiting for agents to start...</small>
+                    </div>
+                </div>
+
+
+
+                <!-- Controls -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>Controls
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary btn-sm w-100 mb-2" onclick="startDemo()">
+                            <i class="fas fa-play me-2"></i>Start Demo
+                        </button>
+                        <button class="btn btn-secondary btn-sm w-100 mb-2" onclick="resetDemo()">
+                            <i class="fas fa-refresh me-2"></i>Reset
+                        </button>
+                        <button class="btn btn-info btn-sm w-100 mb-2" onclick="refreshStatus()">
+                            <i class="fas fa-sync me-2"></i>Refresh Status
+                        </button>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="auto-scroll" checked>
+                            <label class="form-check-label" for="auto-scroll">
+                                Auto-scroll timeline
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="sound-alerts" checked>
+                            <label class="form-check-label" for="sound-alerts">
+                                Sound alerts
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Timeline -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2"></i>Interaction Timeline
+                        </h5>
+                        <span class="badge bg-primary" id="timeline-count">0 events</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="timeline-container" id="timeline-container">
+                            <div class="timeline" id="timeline">
+                                <div class="timeline-empty">
+                                    <i class="fas fa-clock"></i>
+                                    <p>Waiting for agent interactions...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Log -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comments me-2"></i>Live Messages
+                        </h5>
+                        <span class="badge bg-success" id="message-count">0 messages</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="message-log" id="message-log">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                                <p>No messages yet...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let ws = null;
+        let currentStep = 0;
+        let totalSteps = 10;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let messageCount = 0;
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+                updateConnectionStatus(true);
+                reconnectAttempts = 0;
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+                
+                // Attempt to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                    setTimeout(connectWebSocket, 3000);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus(false);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            if (data.type === 'initial_data') {
+                // Load initial data
+                loadEventHistory(data.event_history);
+                updateAgentStatus(data.agent_status);
+
+            } else if (data.step_number) {
+                // New event
+                addTimelineEvent(data);
+                updateCurrentStep(data.step_number);
+                addMessageLog(data);
+
+                
+                // Play sound alert if enabled
+                if (document.getElementById('sound-alerts').checked) {
+                    playNotificationSound();
+                }
+            } else if (data.type === 'status_update') {
+                updateAgentStatus(data.agent_status);
+
+            }
+        }
+
+
+        function addTimelineEvent(event) {
+            const timeline = document.getElementById('timeline');
+            const timelineContainer = document.getElementById('timeline-container');
+            
+            // Remove "waiting" message if it exists
+            const waitingMsg = timeline.querySelector('.timeline-empty');
+            if (waitingMsg) {
+                waitingMsg.remove();
+            }
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'timeline-item';
+            eventDiv.innerHTML = `
+                <div class="timeline-marker ${event.success ? 'success' : 'error'}"></div>
+                <div class="timeline-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="card-title">Step ${event.step_number}: ${event.description}</h6>
+                        <small class="timestamp">${new Date(event.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                    <p class="card-text mb-1">
+                        <strong class="agent-name">Agent:</strong> ${event.agent_id.replace('_', ' ').toUpperCase()}
+                    </p>
+                    <p class="card-text mb-0">
+                        <strong class="event-type">Type:</strong> ${event.event_type.replace('_', ' ').toUpperCase()}
+                    </p>
+                    ${event.data && Object.keys(event.data).length > 0 ? `
+                        <details class="mt-2">
+                            <summary class="text-primary" style="cursor: pointer;">View Details</summary>
+                            <pre class="mt-2 small" style="background: var(--brand-bg); padding: 8px; border-radius: 4px; color: var(--brand-text);">${JSON.stringify(event.data, null, 2)}</pre>
+                        </details>
+                    ` : ''}
+                </div>
+            `;
+            
+            timeline.appendChild(eventDiv);
+            
+            // Update timeline count
+            const timelineCount = document.getElementById('timeline-count');
+            timelineCount.textContent = `${timeline.children.length} events`;
+            
+            // Auto-scroll within the container if enabled
+            if (document.getElementById('auto-scroll').checked) {
+                timelineContainer.scrollTop = timelineContainer.scrollHeight;
+            }
+        }
+
+        function addMessageLog(event) {
+            const messageLog = document.getElementById('message-log');
+            
+            // Remove "no messages" message if it exists
+            const noMsgDiv = messageLog.querySelector('.text-center');
+            if (noMsgDiv) {
+                noMsgDiv.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'border-bottom pb-2 mb-2';
+            messageDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <strong class="text-primary">${event.agent_id.replace('_', ' ')}</strong>
+                    <small class="text-muted">${new Date(event.timestamp).toLocaleTimeString()}</small>
+                </div>
+                <p class="mb-1 small">${event.description}</p>
+                <span class="badge ${event.success ? 'bg-success' : 'bg-danger'}">${event.event_type}</span>
+            `;
+            
+            messageLog.insertBefore(messageDiv, messageLog.firstChild);
+            messageCount++;
+            
+            // Update message count
+            const messageCountEl = document.getElementById('message-count');
+            messageCountEl.textContent = `${messageCount} messages`;
+            
+            // Keep only last 20 messages
+            while (messageLog.children.length > 20) {
+                messageLog.removeChild(messageLog.lastChild);
+            }
+        }
+
+        function updateCurrentStep(stepNumber) {
+            currentStep = stepNumber;
+            document.getElementById('current-step').textContent = stepNumber;
+            
+            const progress = Math.min((stepNumber / totalSteps) * 100, 100);
+            document.getElementById('progress-bar').style.width = progress + '%';
+            
+            // Update step description
+            const descriptions = [
+                'Waiting for agents to start...',
+                'Agent discovery and registration',
+                'Creating purchase request',
+                'Sending quote request to supplier',
+                'Supplier checking inventory',
+                'Generating quote and pricing',
+                'Evaluating quote and making decision',
+                'Placing order with supplier',
+                'Processing order and confirmation',
+                'Order shipped with tracking',
+                'Delivery completed'
+            ];
+            
+            const description = descriptions[Math.min(stepNumber, descriptions.length - 1)];
+            document.getElementById('step-description').textContent = description;
+        }
+
+        function updateAgentStatus(agentStatus) {
+            // Update agent status indicators
+            Object.keys(agentStatus).forEach(agentId => {
+                const status = agentStatus[agentId];
+                const statusElement = document.getElementById(agentId.replace('_', '-') + '-status');
+                if (statusElement) {
+                    statusElement.textContent = status.status === 'active' ? 'Active' : 'Error';
+                    statusElement.className = `agent-status ${status.status === 'active' ? 'status-active' : 'status-error'}`;
+                }
+            });
+        }
+
+
+
+        function loadEventHistory(events) {
+            events.forEach(event => {
+                addTimelineEvent(event);
+                updateCurrentStep(event.step_number);
+            });
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connection-status');
+            if (connected) {
+                statusElement.innerHTML = '<i class="fas fa-circle me-1"></i>Connected';
+                statusElement.className = 'badge bg-success';
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-circle me-1"></i>Disconnected';
+                statusElement.className = 'badge bg-danger';
+            }
+        }
+
+        function playNotificationSound() {
+            // Create a simple notification sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        function startDemo() {
+            fetch('/api/start-demo', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('Demo started:', data.message);
+                    } else {
+                        console.error('Error starting demo:', data.message);
+                    }
+                })
+                .catch(error => console.error('Error starting demo:', error));
+        }
+
+        function resetDemo() {
+            // Reset the dashboard
+            document.getElementById('timeline').innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <p>Waiting for agent interactions...</p>
+                </div>
+            `;
+            document.getElementById('message-log').innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                    <p>No messages yet...</p>
+                </div>
+            `;
+            document.getElementById('timeline-count').textContent = '0 events';
+            document.getElementById('message-count').textContent = '0 messages';
+            messageCount = 0;
+            updateCurrentStep(0);
+        }
+
+        function refreshStatus() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'get_status' }));
+            }
+        }
+
+        // Send ping every 30 seconds to keep connection alive
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>

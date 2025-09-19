@@ -21,6 +21,12 @@ class EventBroadcaster:
             self.connected_clients.remove(client)
             print(f"Client disconnected. Total clients: {len(self.connected_clients)}")
     
+    def reset(self):
+        """Reset the event broadcaster to initial state"""
+        self.event_history.clear()
+        self.step_counter = 0
+        print("🔄 Event broadcaster reset - step counter and history cleared")
+    
     async def broadcast_event(self, event_data: Dict[str, Any]):
         """Broadcast an event to all connected clients"""
         self.step_counter += 1

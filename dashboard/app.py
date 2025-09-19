@@ -1,142 +1,99 @@
-from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect
+import asyncio
+import json
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-import json
-import asyncio
+from fastapi import Request
 import uvicorn
 from a2a_protocol.event_broadcaster import event_broadcaster
 
-app = FastAPI(title="A2A Agent Interaction Dashboard")
+app = FastAPI(title="Disco A2A Dashboard", version="1.0.0")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Templates
-templates = Jinja2Templates(directory="dashboard/templates")
+templates = Jinja2Templates(directory="templates")
 
-# WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: list[WebSocket] = []
-        self.event_broadcaster = event_broadcaster
-    
+        self.active_connections: List[WebSocket] = []
+
     async def connect(self, websocket: WebSocket):
-        """Accept a new WebSocket connection"""
         await websocket.accept()
         self.active_connections.append(websocket)
-        self.event_broadcaster.add_client(websocket)
-        print(f"WebSocket connected. Total connections: {len(self.active_connections)}")
-    
+        event_broadcaster.add_client(websocket)
+        
+        # Send initial data
+        await websocket.send_text(json.dumps({
+            "type": "initial_data",
+            "event_history": event_broadcaster.get_event_history(),
+            "agent_status": event_broadcaster.get_agent_status()
+        }))
+
     def disconnect(self, websocket: WebSocket):
-        """Remove a WebSocket connection"""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-            self.event_broadcaster.remove_client(websocket)
-        print(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
-    
+        event_broadcaster.remove_client(websocket)
+
     async def send_personal_message(self, message: str, websocket: WebSocket):
-        """Send a message to a specific WebSocket connection"""
-        try:
-            await websocket.send_text(message)
-        except Exception as e:
-            print(f"Error sending message: {e}")
-            self.disconnect(websocket)
-    
+        await websocket.send_text(message)
+
     async def broadcast(self, message: str):
-        """Broadcast a message to all active connections"""
-        if self.active_connections:
-            disconnected = []
-            for connection in self.active_connections:
-                try:
-                    await connection.send_text(message)
-                except Exception as e:
-                    print(f"Error broadcasting to connection: {e}")
-                    disconnected.append(connection)
-            
-            # Remove disconnected connections
-            for connection in disconnected:
-                self.disconnect(connection)
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                # Remove broken connections
+                self.active_connections.remove(connection)
 
 manager = ConnectionManager()
 
-@app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    """Main dashboard page"""
+@app.get("/")
+async def get_dashboard(request: Request):
+    """Serve the main dashboard"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/conversation", response_class=HTMLResponse)
-async def conversation_demo(request: Request):
-    """Conversation-style demo page"""
+@app.get("/conversation")
+async def get_conversation(request: Request):
+    """Serve the conversation interface"""
     return templates.TemplateResponse("conversation.html", {"request": request})
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time updates"""
     await manager.connect(websocket)
-    
     try:
-        # Send initial data
-        initial_data = {
-            "type": "initial_data",
-            "event_history": event_broadcaster.get_event_history(),
-            "agent_status": event_broadcaster.get_agent_status(),
-            "timestamp": asyncio.get_event_loop().time()
-        }
-        await manager.send_personal_message(json.dumps(initial_data), websocket)
-        
-        # Keep connection alive and handle incoming messages
         while True:
-            try:
-                # Wait for client messages (like ping/pong)
-                data = await websocket.receive_text()
-                message = json.loads(data)
-                
-                if message.get("type") == "ping":
-                    await manager.send_personal_message(
-                        json.dumps({"type": "pong", "timestamp": asyncio.get_event_loop().time()}),
-                        websocket
-                    )
-                elif message.get("type") == "get_status":
-                    status_data = {
-                        "type": "status_update",
-                        "event_history": event_broadcaster.get_event_history(),
-                        "agent_status": event_broadcaster.get_agent_status(),
-                        "timestamp": asyncio.get_event_loop().time()
-                    }
-                    await manager.send_personal_message(json.dumps(status_data), websocket)
-                    
-            except WebSocketDisconnect:
-                break
-            except Exception as e:
-                print(f"WebSocket error: {e}")
-                break
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            if message.get("type") == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+            elif message.get("type") == "get_status":
+                await websocket.send_text(json.dumps({
+                    "type": "status_update",
+                    "agent_status": event_broadcaster.get_agent_status(),
+                    "event_history": event_broadcaster.get_event_history()
+                }))
                 
     except WebSocketDisconnect:
-        pass
-    finally:
         manager.disconnect(websocket)
-
-@app.get("/api/events")
-async def get_events():
-    """Get all events"""
-    return {
-        "events": event_broadcaster.get_event_history(),
-        "agent_status": event_broadcaster.get_agent_status(),
-        "total_events": len(event_broadcaster.get_event_history())
-    }
 
 @app.get("/api/agents")
 async def get_agents():
-    """Get agent information"""
+    """Get list of available agents"""
     return {
         "agents": [
             {
                 "id": "procurement_agent",
                 "name": "Procurement Agent",
                 "status": "active",
-                "capabilities": ["create_purchase_request", "evaluate_quote", "place_order"]
+                "capabilities": ["create_purchase_request", "find_suppliers", "request_quote", "place_order"]
             },
             {
                 "id": "supplier_agent", 
-                "name": "Office Supplies Supplier Agent",
+                "name": "Supplier Agent",
                 "status": "active",
                 "capabilities": ["check_inventory", "generate_quote", "process_order"]
             }
@@ -177,6 +134,23 @@ async def start_step_demo():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.post("/api/reset-demo")
+async def reset_demo():
+    """Reset the demo and clear all events"""
+    try:
+        # Reset the event broadcaster
+        event_broadcaster.reset()
+        
+        # Broadcast reset event to all connected clients
+        await manager.broadcast(json.dumps({
+            "type": "demo_reset",
+            "message": "Demo has been reset"
+        }))
+        
+        return {"status": "success", "message": "Demo reset successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
@@ -198,11 +172,12 @@ async def get_statistics():
             "protocol": protocol_stats,
             "dashboard": {
                 "active_connections": len(manager.active_connections),
-                "total_events": len(event_broadcaster.get_event_history())
+                "total_events": len(event_broadcaster.get_event_history()),
+                "step_counter": event_broadcaster.step_counter
             }
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
