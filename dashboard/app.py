@@ -53,12 +53,20 @@ static_dir = "static"
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Templates - use absolute path to ensure it works in Railway
-templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+# Templates - handle both local and Railway deployment paths
+dashboard_dir = os.path.dirname(__file__)
+templates_dir = os.path.join(dashboard_dir, "templates")
+
+# If running from root directory (Railway), use dashboard/templates
+if not os.path.exists(templates_dir):
+    templates_dir = os.path.join("dashboard", "templates")
+
+print(f"Dashboard directory: {dashboard_dir}")
 print(f"Templates directory: {templates_dir}")
 print(f"Templates directory exists: {os.path.exists(templates_dir)}")
 if os.path.exists(templates_dir):
     print(f"Files in templates directory: {os.listdir(templates_dir)}")
+
 templates = Jinja2Templates(directory=templates_dir)
 
 class ConnectionManager:
