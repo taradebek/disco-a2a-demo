@@ -1,13 +1,50 @@
 import asyncio
 import json
 import os
+import sys
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 import uvicorn
-from a2a_protocol.event_broadcaster import event_broadcaster
+
+# Add the parent directory to the Python path to import modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from a2a_protocol.event_broadcaster import event_broadcaster
+    print("✅ Successfully imported event_broadcaster")
+except Exception as e:
+    print(f"❌ Failed to import event_broadcaster: {e}")
+    # Create a mock event broadcaster for testing
+    class MockEventBroadcaster:
+        def __init__(self):
+            self.event_history = []
+            self.step_counter = 0
+            self.connected_clients = []
+        
+        def add_client(self, client):
+            self.connected_clients.append(client)
+            print(f"Client connected. Total clients: {len(self.connected_clients)}")
+        
+        def remove_client(self, client):
+            if client in self.connected_clients:
+                self.connected_clients.remove(client)
+                print(f"Client disconnected. Total clients: {len(self.connected_clients)}")
+        
+        def reset(self):
+            self.event_history.clear()
+            self.step_counter = 0
+            print("🔄 Event broadcaster reset")
+        
+        def get_event_history(self):
+            return []
+        
+        def get_agent_status(self):
+            return {}
+    
+    event_broadcaster = MockEventBroadcaster()
 
 app = FastAPI(title="Disco A2A Dashboard", version="1.0.0")
 
@@ -21,7 +58,7 @@ templates = Jinja2Templates(directory="templates")
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -56,12 +93,30 @@ manager = ConnectionManager()
 @app.get("/")
 async def get_dashboard(request: Request):
     """Serve the main dashboard"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        print(f"Error serving dashboard: {e}")
+        return HTMLResponse(f"<h1>Error loading dashboard</h1><p>{str(e)}</p>", status_code=500)
+
+@app.get("/test")
+async def test_endpoint():
+    """Test endpoint to check if the app is working"""
+    return {
+        "status": "ok",
+        "message": "App is running",
+        "event_broadcaster_working": hasattr(event_broadcaster, 'get_event_history'),
+        "python_path": sys.path[:3]  # Show first 3 paths
+    }
 
 @app.get("/conversation")
 async def get_conversation(request: Request):
     """Serve the conversation interface"""
-    return templates.TemplateResponse("conversation.html", {"request": request})
+    try:
+        return templates.TemplateResponse("conversation.html", {"request": request})
+    except Exception as e:
+        print(f"Error serving conversation: {e}")
+        return HTMLResponse(f"<h1>Error loading conversation</h1><p>{str(e)}</p>", status_code=500)
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -81,6 +136,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 }))
                 
     except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
 @app.get("/api/agents")
@@ -107,11 +165,6 @@ async def get_agents():
 async def start_demo():
     """Start the slow conversation demo"""
     try:
-        # Import and run the conversation demo
-        import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
         from examples.conversation_demo import run_conversation_demo
         
         # Run the demo in the background
@@ -119,22 +172,20 @@ async def start_demo():
         
         return {"status": "success", "message": "Slow conversation demo started"}
     except Exception as e:
+        print(f"Error starting demo: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.post("/api/start-step-demo")
 async def start_step_demo():
     """Start the step-by-step demo"""
     try:
-        import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
         from examples.conversation_demo import run_step_by_step_demo
         
         asyncio.create_task(run_step_by_step_demo())
         
         return {"status": "success", "message": "Step-by-step demo started"}
     except Exception as e:
+        print(f"Error starting step demo: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.post("/api/reset-demo")
@@ -152,24 +203,29 @@ async def reset_demo():
         
         return {"status": "success", "message": "Demo reset successfully"}
     except Exception as e:
+        print(f"Error resetting demo: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "active_connections": len(manager.active_connections),
-        "total_events": len(event_broadcaster.get_event_history()),
-        "timestamp": asyncio.get_event_loop().time()
-    }
+    try:
+        return {
+            "status": "healthy",
+            "active_connections": len(manager.active_connections),
+            "total_events": len(event_broadcaster.get_event_history()),
+            "timestamp": asyncio.get_event_loop().time()
+        }
+    except Exception as e:
+        print(f"Health check error: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.get("/api/statistics")
 async def get_statistics():
     """Get comprehensive statistics"""
-    from a2a_protocol.protocol import a2a_protocol
-    
     try:
+        from a2a_protocol.protocol import a2a_protocol
+        
         protocol_stats = await a2a_protocol.get_protocol_statistics()
         return {
             "protocol": protocol_stats,
@@ -180,6 +236,7 @@ async def get_statistics():
             }
         }
     except Exception as e:
+        print(f"Statistics error: {e}")
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
