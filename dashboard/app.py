@@ -53,8 +53,13 @@ static_dir = "static"
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Templates
-templates = Jinja2Templates(directory="templates")
+# Templates - use absolute path to ensure it works in Railway
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+print(f"Templates directory: {templates_dir}")
+print(f"Templates directory exists: {os.path.exists(templates_dir)}")
+if os.path.exists(templates_dir):
+    print(f"Files in templates directory: {os.listdir(templates_dir)}")
+templates = Jinja2Templates(directory=templates_dir)
 
 class ConnectionManager:
     def __init__(self):
@@ -94,10 +99,44 @@ manager = ConnectionManager()
 async def get_dashboard(request: Request):
     """Serve the main dashboard"""
     try:
+        print(f"Attempting to render index.html from: {templates_dir}")
         return templates.TemplateResponse("index.html", {"request": request})
     except Exception as e:
         print(f"Error serving dashboard: {e}")
-        return HTMLResponse(f"<h1>Error loading dashboard</h1><p>{str(e)}</p>", status_code=500)
+        # Return a simple HTML response instead of 500
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Disco A2A Dashboard</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #1a1a2e; color: white; }
+                .error { background: #e17055; padding: 20px; border-radius: 10px; margin: 20px 0; }
+                .info { background: #00b894; padding: 20px; border-radius: 10px; margin: 20px 0; }
+                .debug { background: #6c5ce7; padding: 20px; border-radius: 10px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <h1>🚀 Disco A2A Dashboard</h1>
+            <div class="error">
+                <h2>⚠️ Template Loading Error</h2>
+                <p>Could not load the dashboard template. This is likely a deployment issue.</p>
+                <p><strong>Error:</strong> {}</p>
+            </div>
+            <div class="info">
+                <h2>📊 Dashboard Status</h2>
+                <p>The backend is running correctly, but there's an issue with the frontend template.</p>
+                <p><a href="/test">Test Backend</a> | <a href="/api/health">Health Check</a></p>
+            </div>
+            <div class="debug">
+                <h2>🔧 Debug Information</h2>
+                <p><strong>Current Directory:</strong> {}</p>
+                <p><strong>Templates Directory:</strong> {}</p>
+                <p><strong>Templates Exist:</strong> {}</p>
+            </div>
+        </body>
+        </html>
+        """.format(str(e), os.getcwd(), templates_dir, os.path.exists(templates_dir)), status_code=200)
 
 @app.get("/test")
 async def test_endpoint():
@@ -106,7 +145,11 @@ async def test_endpoint():
         "status": "ok",
         "message": "App is running",
         "event_broadcaster_working": hasattr(event_broadcaster, 'get_event_history'),
-        "python_path": sys.path[:3]  # Show first 3 paths
+        "python_path": sys.path[:3],  # Show first 3 paths
+        "current_directory": os.getcwd(),
+        "templates_directory": templates_dir,
+        "templates_exist": os.path.exists(templates_dir),
+        "templates_files": os.listdir(templates_dir) if os.path.exists(templates_dir) else "Directory not found"
     }
 
 @app.get("/conversation")
