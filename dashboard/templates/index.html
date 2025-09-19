@@ -552,6 +552,66 @@
             }
         }
 
+        function getEventDescription(event) {
+            // Provide more meaningful descriptions for specific event types
+            const eventType = event.event_type;
+            const data = event.data || {};
+            
+            switch (eventType) {
+                case 'payment_sent':
+                    return `💳 Payment sent for order ${data.order_id || 'N/A'}: $${data.amount || 0}`;
+                case 'payment_received':
+                    return `💰 Payment received for order ${data.order_id || 'N/A'}: $${data.amount || 0}`;
+                case 'invoice_generated':
+                    return `📄 Invoice ${data.invoice_id || 'N/A'} generated for order ${data.order_id || 'N/A'}: $${data.total_amount || 0}`;
+                case 'order_placed':
+                    return `📦 Order ${data.order_id || 'N/A'} placed for $${data.total_amount || 0}`;
+                case 'quote_generated':
+                    return `💵 Quote ${data.quote_id || 'N/A'} generated: $${data.total_amount || 0}`;
+                case 'message_sent':
+                    return `📤 Message sent to ${event.agent_id.replace('_', ' ')}`;
+                case 'message_received':
+                    return `📥 Message received from ${event.agent_id.replace('_', ' ')}`;
+                case 'task_created':
+                    return `📋 Task created: ${data.task_name || 'New task'}`;
+                case 'discovery':
+                    return `🔍 Agent discovery: ${event.agent_id.replace('_', ' ')} registered`;
+                case 'status_update':
+                    return `🔄 Status update: ${event.agent_id.replace('_', ' ')}`;
+                default:
+                    return event.description || `Event: ${eventType.replace('_', ' ')}`;
+            }
+        }
+
+        function getEventIcon(event) {
+            // Provide appropriate icons for different event types
+            const eventType = event.event_type;
+            
+            switch (eventType) {
+                case 'payment_sent':
+                case 'payment_received':
+                    return '��';
+                case 'invoice_generated':
+                    return '📄';
+                case 'order_placed':
+                    return '📦';
+                case 'quote_generated':
+                    return '💵';
+                case 'message_sent':
+                    return '📤';
+                case 'message_received':
+                    return '📥';
+                case 'task_created':
+                    return '📋';
+                case 'discovery':
+                    return '🔍';
+                case 'status_update':
+                    return '🔄';
+                default:
+                    return '📝';
+            }
+        }
+
         function addTimelineEvent(event) {
             const timeline = document.getElementById('timeline');
             const timelineContainer = document.getElementById('timeline-container');
@@ -564,11 +624,16 @@
             
             const eventDiv = document.createElement('div');
             eventDiv.className = 'timeline-item event-card';
+            
+            // Get enhanced description and icon
+            const description = getEventDescription(event);
+            const icon = getEventIcon(event);
+            
             eventDiv.innerHTML = `
                 <div class="timeline-marker ${event.success ? 'success' : 'error'}"></div>
                 <div class="timeline-card">
                     <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="card-title">Step ${event.step_number}: ${event.description}</h6>
+                        <h6 class="card-title">${icon} Step ${event.step_number}: ${description}</h6>
                         <small class="timestamp">${new Date(event.timestamp).toLocaleTimeString()}</small>
                     </div>
                     <p class="card-text mb-1">
@@ -614,7 +679,7 @@
                     <strong class="text-primary">${event.agent_id.replace('_', ' ')}</strong>
                     <small class="text-muted">${new Date(event.timestamp).toLocaleTimeString()}</small>
                 </div>
-                <p class="mb-1 small">${event.description}</p>
+                <p class="mb-1 small">${getEventDescription(event)}</p>
                 <span class="badge ${event.success ? 'bg-success' : 'bg-danger'}">${event.event_type}</span>
             `;
             
