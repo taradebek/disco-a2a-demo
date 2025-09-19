@@ -757,15 +757,19 @@
                 console.log('🎉 Demo completed! Stopping timer...');
                 isDemoComplete = true;
                 demoEndTime = new Date();
-                console.log('Demo completed! Final time:', demoEndTime - demoStartTime, 'ms');
+                const totalTimeMs = demoEndTime - demoStartTime;
+                const totalTimeSeconds = Math.floor(totalTimeMs / 1000);
                 
-                // Show completion banner
-                showCompletionBanner();
+                console.log('Demo completed! Final time:', totalTimeMs, 'ms');
+                console.log('Demo completed in:', totalTimeSeconds, 'seconds');
                 
-                // Update step description to show completion
+                // Show completion banner with time
+                showCompletionBanner(totalTimeSeconds);
+                
+                // Update step description to show completion with time
                 const stepDesc = document.getElementById('step-description');
                 if (stepDesc) {
-                    stepDesc.textContent = 'Transaction completed successfully!';
+                    stepDesc.textContent = `Transaction completed in ${totalTimeSeconds}s!`;
                 }
                 
                 // Style the current step card to show completion
@@ -773,10 +777,15 @@
                 if (currentStepCard) {
                     currentStepCard.classList.add('completion-success');
                 }
+                
+                // Auto-generate and download invoice
+                setTimeout(() => {
+                    generateAndDownloadInvoice(totalTimeSeconds, events.length);
+                }, 2000); // Wait 2 seconds to show completion first
             }
         }
 
-        function showCompletionBanner() {
+        function showCompletionBanner(completionTimeSeconds) {
             const banner = document.getElementById('completion-banner');
             if (banner) {
                 const completedTasks = document.getElementById('tasks-completed');
@@ -787,7 +796,13 @@
                     const completionTasks = document.getElementById('completion-tasks');
                     const completionTime = document.getElementById('completion-time');
                     if (completionTasks) completionTasks.textContent = completedTasks.textContent;
-                    if (completionTime) completionTime.textContent = totalTime.textContent;
+                    if (completionTime) completionTime.textContent = `${completionTimeSeconds}s`;
+                }
+                
+                // Update banner message to include completion time
+                const bannerTitle = banner.querySelector('h3');
+                if (bannerTitle) {
+                    bannerTitle.innerHTML = `<i class="fas fa-check-circle me-2"></i>Transaction Completed in ${completionTimeSeconds} seconds!`;
                 }
                 
                 // Show the banner with animation
@@ -796,6 +811,253 @@
                 // Scroll to top to show the banner
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+        }
+
+        function generateAndDownloadInvoice(completionTimeSeconds, totalSteps) {
+            console.log('🧾 Generating invoice for completed transaction...');
+            
+            // Collect transaction data from timeline events
+            const timeline = document.getElementById('timeline');
+            const events = timeline.querySelectorAll('.timeline-item');
+            
+            let orderData = null;
+            let paymentData = null;
+            let invoiceData = null;
+            
+            // Extract key transaction details
+            events.forEach(event => {
+                const eventTypeElement = event.querySelector('.event-type');
+                const eventTitle = event.querySelector('.card-title');
+                
+                if (eventTypeElement && eventTitle) {
+                    const eventType = eventTypeElement.textContent.toLowerCase().replace(/\s+/g, '_');
+                    const titleText = eventTitle.textContent;
+                    
+                    if (eventType === 'order_placed') {
+                        // Extract order details from title
+                        const orderMatch = titleText.match(/Order\s+(\w+)\s+placed\s+for\s+\$([0-9.]+)/);
+                        if (orderMatch) {
+                            orderData = {
+                                orderId: orderMatch[1],
+                                amount: parseFloat(orderMatch[2])
+                            };
+                        }
+                    } else if (eventType === 'payment_sent' || eventType === 'payment_received') {
+                        // Extract payment details
+                        const paymentMatch = titleText.match(/Payment\s+(?:sent|received)\s+for\s+order\s+(\w+):\s+\$([0-9.]+)/);
+                        if (paymentMatch) {
+                            paymentData = {
+                                orderId: paymentMatch[1],
+                                amount: parseFloat(paymentMatch[2])
+                            };
+                        }
+                    } else if (eventType === 'invoice_generated') {
+                        // Extract invoice details
+                        const invoiceMatch = titleText.match(/Invoice\s+(\w+)\s+generated\s+for\s+order\s+(\w+)/);
+                        if (invoiceMatch) {
+                            invoiceData = {
+                                invoiceId: invoiceMatch[1],
+                                orderId: invoiceMatch[2]
+                            };
+                        }
+                    }
+                }
+            });
+            
+            // Generate invoice HTML content
+            const invoiceHtml = generateInvoiceHTML({
+                completionTime: completionTimeSeconds,
+                totalSteps: totalSteps,
+                orderData: orderData,
+                paymentData: paymentData,
+                invoiceData: invoiceData,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Create and trigger download
+            const blob = new Blob([invoiceHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `disco-invoice-${invoiceData?.invoiceId || 'transaction'}-${Date.now()}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('📥 Invoice downloaded successfully!');
+            
+            // Show download notification
+            showDownloadNotification(a.download);
+        }
+
+        function generateInvoiceHTML(data) {
+            const { completionTime, totalSteps, orderData, paymentData, invoiceData, timestamp } = data;
+            const date = new Date(timestamp);
+            
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disco A2A Transaction Invoice</title>
+    <style>
+        body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
+        .invoice { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #00e3a2, #6c5ce7); color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 2.2em; font-weight: 700; }
+        .header p { margin: 10px 0 0; opacity: 0.9; font-size: 1.1em; }
+        .content { padding: 40px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #2c3e50; border-bottom: 2px solid #00e3a2; padding-bottom: 10px; margin-bottom: 20px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .info-item { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #00e3a2; }
+        .info-label { font-weight: 600; color: #6c5ce7; margin-bottom: 5px; }
+        .info-value { font-size: 1.1em; color: #2c3e50; }
+        .products { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .product-item { display: flex; justify-content: between; padding: 10px 0; border-bottom: 1px solid #e9ecef; }
+        .product-item:last-child { border-bottom: none; }
+        .total { background: linear-gradient(135deg, #00e3a2, #00c58d); color: white; padding: 20px; border-radius: 8px; text-align: center; font-size: 1.3em; font-weight: 700; }
+        .performance { background: linear-gradient(135deg, #6c5ce7, #5a4fcf); color: white; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .performance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center; }
+        .performance-item h3 { margin: 0; font-size: 2em; }
+        .performance-item p { margin: 5px 0 0; opacity: 0.9; }
+        .footer { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="invoice">
+        <div class="header">
+            <h1>🤖 Disco A2A Transaction Invoice</h1>
+            <p>Autonomous Agent-to-Agent Commerce</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>📋 Transaction Details</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Invoice ID</div>
+                        <div class="info-value">${invoiceData?.invoiceId || 'INV-' + Date.now()}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Order ID</div>
+                        <div class="info-value">${orderData?.orderId || invoiceData?.orderId || 'ORD-' + Date.now()}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Transaction Date</div>
+                        <div class="info-value">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Transaction Type</div>
+                        <div class="info-value">Agent-to-Agent Purchase</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📦 Items Purchased</h2>
+                <div class="products">
+                    <div class="product-item">
+                        <div style="flex: 1;"><strong>A4 Paper (80gsm)</strong></div>
+                        <div style="width: 80px; text-align: center;">50</div>
+                        <div style="width: 100px; text-align: right;">$8.50</div>
+                        <div style="width: 100px; text-align: right;"><strong>$425.00</strong></div>
+                    </div>
+                    <div class="product-item">
+                        <div style="flex: 1;"><strong>Black Pens (Box of 12)</strong></div>
+                        <div style="width: 80px; text-align: center;">20</div>
+                        <div style="width: 100px; text-align: right;">$12.00</div>
+                        <div style="width: 100px; text-align: right;"><strong>$240.00</strong></div>
+                    </div>
+                    <div class="product-item">
+                        <div style="flex: 1;"><strong>Heavy-duty Staplers</strong></div>
+                        <div style="width: 80px; text-align: center;">10</div>
+                        <div style="width: 100px; text-align: right;">$25.00</div>
+                        <div style="width: 100px; text-align: right;"><strong>$250.00</strong></div>
+                    </div>
+                </div>
+                
+                <div class="total">
+                    Total Amount: $${orderData?.amount || paymentData?.amount || '915.00'}
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="performance">
+                    <h2 style="text-align: center; margin-bottom: 20px;">⚡ Transaction Performance</h2>
+                    <div class="performance-grid">
+                        <div class="performance-item">
+                            <h3>${completionTime}s</h3>
+                            <p>Completion Time</p>
+                        </div>
+                        <div class="performance-item">
+                            <h3>${totalSteps}</h3>
+                            <p>Total Steps</p>
+                        </div>
+                        <div class="performance-item">
+                            <h3>100%</h3>
+                            <p>Success Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>🎉 Transaction completed successfully by AI agents using Disco's A2A protocol</strong></p>
+            <p>Thank you for using Disco! • Generated on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}</p>
+        </div>
+    </div>
+</body>
+</html>`;
+        }
+
+        function showDownloadNotification(filename) {
+            // Create a temporary notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #00e3a2, #00c58d);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,227,162,0.3);
+                z-index: 10000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.innerHTML = `
+                <i class="fas fa-download me-2"></i>
+                Invoice downloaded: ${filename}
+            `;
+            
+            // Add animation keyframes
+            if (!document.getElementById('notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
         }
 
         function updateStatistics(data = null) {
