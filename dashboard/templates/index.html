@@ -126,6 +126,66 @@
             }
         }
 
+        /* Completion Banner Styles */
+        .completion-banner {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+            animation: slideDown 0.5s ease-out;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .completion-banner h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+        .completion-banner p {
+            margin: 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .completion-banner .completion-stats {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .completion-banner .stat-item {
+            text-align: center;
+        }
+        .completion-banner .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            display: block;
+        }
+        .completion-banner .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .completion-banner {
+            animation: slideDown 0.5s ease-out, pulse 2s ease-in-out infinite;
+        }
+
         .timeline-container {
             max-height: 500px;
             overflow-y: auto;
@@ -235,11 +295,6 @@
             color: var(--brand-muted);
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
         .agent-status {
             display: inline-block;
             padding: 4px 8px;
@@ -285,6 +340,18 @@
             background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-accent) 100%);
             color: white;
         }
+        
+        /* Completion state styling */
+        .completion-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            color: white !important;
+        }
+        .completion-success .step-counter {
+            color: white !important;
+        }
+        .completion-success .progress-bar {
+            background: rgba(255, 255, 255, 0.3) !important;
+        }
     </style>
 </head>
 <body>
@@ -312,6 +379,26 @@
             <span id="connection-status" class="badge bg-secondary">
                 <i class="fas fa-circle me-1"></i>Disconnected
             </span>
+        </div>
+
+        <!-- Completion Banner (hidden by default) -->
+        <div id="completion-banner" class="completion-banner" style="display: none;">
+            <h3><i class="fas fa-check-circle me-2"></i>Transaction Completed Successfully!</h3>
+            <p>Your office supply order has been processed, payment received, and invoice generated.</p>
+            <div class="completion-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="completion-tasks">0</span>
+                    <span class="stat-label">Tasks Completed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="completion-time">0s</span>
+                    <span class="stat-label">Total Time</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value"><i class="fas fa-file-invoice me-1"></i>Generated</span>
+                    <span class="stat-label">Invoice Status</span>
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -404,7 +491,7 @@
                 </div>
 
                 <!-- Current Step -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="current-step-card">
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             <i class="fas fa-play-circle me-2"></i>Current Step
@@ -583,9 +670,32 @@
                 demoEndTime = new Date();
                 console.log('Demo completed! Final time:', demoEndTime - demoStartTime, 'ms');
                 
+                // Show completion banner
+                showCompletionBanner();
+                
                 // Update step description to show completion
                 document.getElementById('step-description').textContent = 'Transaction completed successfully!';
+                
+                // Style the current step card to show completion
+                const currentStepCard = document.getElementById('current-step-card');
+                currentStepCard.classList.add('completion-success');
             }
+        }
+
+        function showCompletionBanner() {
+            const banner = document.getElementById('completion-banner');
+            const completedTasks = document.getElementById('tasks-completed').textContent;
+            const totalTime = document.getElementById('total-time').textContent;
+            
+            // Update banner stats
+            document.getElementById('completion-tasks').textContent = completedTasks;
+            document.getElementById('completion-time').textContent = totalTime;
+            
+            // Show the banner with animation
+            banner.style.display = 'block';
+            
+            // Scroll to top to show the banner
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function getEventDescription(event) {
@@ -595,7 +705,7 @@
             
             switch (eventType) {
                 case 'payment_sent':
-                    return `💳 Payment sent for order ${data.order_id || 'N/A'}: $${data.amount || 0}`;
+                    return `�� Payment sent for order ${data.order_id || 'N/A'}: $${data.amount || 0}`;
                 case 'payment_received':
                     return `💰 Payment received for order ${data.order_id || 'N/A'}: $${data.amount || 0}`;
                 case 'invoice_generated':
@@ -841,10 +951,17 @@
         }
 
         function startDemo() {
+            // Hide completion banner if visible
+            document.getElementById('completion-banner').style.display = 'none';
+            
             // Record demo start time
             demoStartTime = new Date();
             demoEndTime = null;
             isDemoComplete = false;
+            
+            // Reset current step card styling
+            const currentStepCard = document.getElementById('current-step-card');
+            currentStepCard.classList.remove('completion-success');
             
             fetch('/api/start-demo', { method: 'POST' })
                 .then(response => response.json())
@@ -859,10 +976,17 @@
         }
 
         function resetDemo() {
+            // Hide completion banner
+            document.getElementById('completion-banner').style.display = 'none';
+            
             // Reset demo timing
             demoStartTime = null;
             demoEndTime = null;
             isDemoComplete = false;
+            
+            // Reset current step card styling
+            const currentStepCard = document.getElementById('current-step-card');
+            currentStepCard.classList.remove('completion-success');
             
             // Reset the dashboard
             document.getElementById('timeline').innerHTML = `
@@ -907,8 +1031,10 @@
             }
         }, 30000);
 
-        // Initialize
+        // Initialize and auto-reset on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Auto-reset the dashboard when page loads/refreshes
+            resetDemo();
             connectWebSocket();
         });
     </script>
