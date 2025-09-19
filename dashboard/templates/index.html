@@ -763,8 +763,12 @@
                 console.log('Demo completed! Final time:', totalTimeMs, 'ms');
                 console.log('Demo completed in:', totalTimeSeconds, 'seconds');
                 
-                // Show completion banner with time
-                showCompletionBanner(totalTimeSeconds);
+                // Try to show completion banner with time (if it exists)
+                try {
+                    showCompletionBanner(totalTimeSeconds);
+                } catch (error) {
+                    console.log('Completion banner not available, continuing without it');
+                }
                 
                 // Update step description to show completion with time
                 const stepDesc = document.getElementById('step-description');
@@ -778,9 +782,16 @@
                     currentStepCard.classList.add('completion-success');
                 }
                 
-                // Auto-generate and download invoice
+                // Auto-generate and download invoice (independent of banner)
+                console.log('🎉 Transaction complete! Generating invoice in 2 seconds...');
                 setTimeout(() => {
-                    generateAndDownloadInvoice(totalTimeSeconds, events.length);
+                    try {
+                        generateAndDownloadInvoice(totalTimeSeconds, events.length);
+                    } catch (error) {
+                        console.error('Error generating invoice:', error);
+                        // Show fallback notification
+                        alert(`Transaction completed in ${totalTimeSeconds} seconds! Invoice generation failed, but you can manually create one with the transaction details.`);
+                    }
                 }, 2000); // Wait 2 seconds to show completion first
             }
         }
@@ -815,10 +826,18 @@
 
         function generateAndDownloadInvoice(completionTimeSeconds, totalSteps) {
             console.log('🧾 Generating invoice for completed transaction...');
+            console.log('Completion time:', completionTimeSeconds, 'seconds');
+            console.log('Total steps:', totalSteps);
             
             // Collect transaction data from timeline events
             const timeline = document.getElementById('timeline');
+            if (!timeline) {
+                console.error('Timeline element not found!');
+                return;
+            }
+            
             const events = timeline.querySelectorAll('.timeline-item');
+            console.log('Found', events.length, 'timeline events to process');
             
             let orderData = null;
             let paymentData = null;
@@ -864,7 +883,10 @@
                 }
             });
             
+            console.log('Extracted data:', { orderData, paymentData, invoiceData });
+            
             // Generate invoice HTML content
+            console.log('Generating invoice HTML...');
             const invoiceHtml = generateInvoiceHTML({
                 completionTime: completionTimeSeconds,
                 totalSteps: totalSteps,
@@ -874,21 +896,31 @@
                 timestamp: new Date().toISOString()
             });
             
+            console.log('Invoice HTML generated, length:', invoiceHtml.length, 'characters');
+            
             // Create and trigger download
+            console.log('Creating download blob...');
             const blob = new Blob([invoiceHtml], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
+            const filename = `disco-invoice-${invoiceData?.invoiceId || 'transaction'}-${Date.now()}.html`;
             a.href = url;
-            a.download = `disco-invoice-${invoiceData?.invoiceId || 'transaction'}-${Date.now()}.html`;
+            a.download = filename;
+            
+            console.log('Triggering download for:', filename);
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            console.log('📥 Invoice downloaded successfully!');
+            console.log('📥 Invoice download triggered successfully!');
             
             // Show download notification
-            showDownloadNotification(a.download);
+            try {
+                showDownloadNotification(filename);
+            } catch (error) {
+                console.log('Download notification failed, but download should still work');
+            }
         }
 
         function generateInvoiceHTML(data) {
