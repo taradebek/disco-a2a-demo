@@ -521,6 +521,41 @@
         let maxReconnectAttempts = 5;
         let messageCount = 0;
 
+
+        function downloadPDF(pdfUrl, filename) {
+            // Create a temporary link element and trigger download
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showPDFNotification(filename) {
+            // Create a notification for PDF download
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.innerHTML = `
+                <i class="fas fa-file-pdf me-2"></i>
+                <strong>Invoice Ready!</strong> ${filename} is downloading...
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
         function connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws`;

@@ -9,3 +9,4 @@ eventlet==0.33.3
 asyncio-mqtt==0.16.1
 aiofiles==23.2.1
 python-dotenv==1.0.0
+reportlab
