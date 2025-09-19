@@ -419,22 +419,22 @@
                     </div>
                 </div>
 
-                <!-- Statistics -->
+                <!-- Performance Statistics -->
                 <div class="card mb-4 stats-card">
                     <div class="card-header">
                         <h5 class="card-title mb-0 text-white">
-                            <i class="fas fa-chart-bar me-2"></i>Statistics
+                            <i class="fas fa-chart-line me-2"></i>Performance
                         </h5>
                     </div>
                     <div class="card-body text-white">
                         <div class="row text-center">
                             <div class="col-6">
-                                <div class="h4 mb-0" id="total-events">0</div>
-                                <small>Events</small>
+                                <div class="h4 mb-0" id="tasks-completed">0</div>
+                                <small>Tasks Completed</small>
                             </div>
                             <div class="col-6">
-                                <div class="h4 mb-0" id="total-messages">0</div>
-                                <small>Messages</small>
+                                <div class="h4 mb-0" id="total-time">0s</div>
+                                <small>Total Time</small>
                             </div>
                         </div>
                     </div>
@@ -493,6 +493,8 @@
         let reconnectAttempts = 0;
         let maxReconnectAttempts = 5;
         let messageCount = 0;
+        let demoStartTime = null;
+        let tasksCompleted = 0;
 
         function connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -590,7 +592,7 @@
             switch (eventType) {
                 case 'payment_sent':
                 case 'payment_received':
-                    return '��';
+                    return '💳';
                 case 'invoice_generated':
                     return '📄';
                 case 'order_placed':
@@ -735,15 +737,27 @@
         }
 
         function updateStatistics(data = null) {
-            if (data) {
-                if (data.event_history) {
-                    document.getElementById('total-events').textContent = data.event_history.length;
+            // Count completed tasks based on event types
+            const completedTaskTypes = ['order_placed', 'payment_sent', 'payment_received', 'invoice_generated'];
+            const timeline = document.getElementById('timeline');
+            const events = timeline.querySelectorAll('.timeline-item');
+            
+            let completedTasks = 0;
+            events.forEach(event => {
+                const eventType = event.querySelector('.event-type').textContent.toLowerCase().replace(/\s+/g, '_');
+                if (completedTaskTypes.includes(eventType)) {
+                    completedTasks++;
                 }
-                if (data.agent_status) {
-                    // Update message count based on agent activity
-                    const totalMessages = Object.keys(data.agent_status).length;
-                    document.getElementById('total-messages').textContent = totalMessages;
-                }
+            });
+            
+            // Update tasks completed
+            document.getElementById('tasks-completed').textContent = completedTasks;
+            
+            // Calculate total time if demo has started
+            if (demoStartTime) {
+                const currentTime = new Date();
+                const elapsedSeconds = Math.floor((currentTime - demoStartTime) / 1000);
+                document.getElementById('total-time').textContent = `${elapsedSeconds}s`;
             }
         }
 
@@ -752,6 +766,7 @@
                 addTimelineEvent(event);
                 updateCurrentStep(event.step_number);
             });
+            updateStatistics();
         }
 
         function updateConnectionStatus(connected) {
@@ -785,6 +800,9 @@
         }
 
         function startDemo() {
+            // Record demo start time
+            demoStartTime = new Date();
+            
             fetch('/api/start-demo', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
@@ -798,6 +816,9 @@
         }
 
         function resetDemo() {
+            // Reset demo start time
+            demoStartTime = null;
+            
             // Reset the dashboard
             document.getElementById('timeline').innerHTML = `
                 <div class="timeline-empty">
@@ -815,6 +836,10 @@
             document.getElementById('message-count').textContent = '0 messages';
             messageCount = 0;
             updateCurrentStep(0);
+            
+            // Reset statistics
+            document.getElementById('tasks-completed').textContent = '0';
+            document.getElementById('total-time').textContent = '0s';
         }
 
         function refreshStatus() {
@@ -822,6 +847,13 @@
                 ws.send(JSON.stringify({ type: 'get_status' }));
             }
         }
+
+        // Update time every second when demo is running
+        setInterval(() => {
+            if (demoStartTime) {
+                updateStatistics();
+            }
+        }, 1000);
 
         // Send ping every 30 seconds to keep connection alive
         setInterval(() => {
