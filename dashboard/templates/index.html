@@ -494,7 +494,9 @@
         let maxReconnectAttempts = 5;
         let messageCount = 0;
         let demoStartTime = null;
+        let demoEndTime = null;
         let tasksCompleted = 0;
+        let isDemoComplete = false;
 
         function connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -544,6 +546,9 @@
                 addMessageLog(data);
                 updateStatistics();
                 
+                // Check if demo is complete
+                checkDemoCompletion();
+                
                 // Play sound alert if enabled
                 if (document.getElementById('sound-alerts').checked) {
                     playNotificationSound();
@@ -551,6 +556,35 @@
             } else if (data.type === 'status_update') {
                 updateAgentStatus(data.agent_status);
                 updateStatistics(data);
+            }
+        }
+
+        function checkDemoCompletion() {
+            // Check if we have all the key completion events
+            const timeline = document.getElementById('timeline');
+            const events = timeline.querySelectorAll('.timeline-item');
+            
+            let hasOrder = false;
+            let hasPaymentSent = false;
+            let hasPaymentReceived = false;
+            let hasInvoice = false;
+            
+            events.forEach(event => {
+                const eventType = event.querySelector('.event-type').textContent.toLowerCase().replace(/\s+/g, '_');
+                if (eventType === 'order_placed') hasOrder = true;
+                if (eventType === 'payment_sent') hasPaymentSent = true;
+                if (eventType === 'payment_received') hasPaymentReceived = true;
+                if (eventType === 'invoice_generated') hasInvoice = true;
+            });
+            
+            // Demo is complete when we have all key events
+            if (hasOrder && hasPaymentSent && hasPaymentReceived && hasInvoice && !isDemoComplete) {
+                isDemoComplete = true;
+                demoEndTime = new Date();
+                console.log('Demo completed! Final time:', demoEndTime - demoStartTime, 'ms');
+                
+                // Update step description to show completion
+                document.getElementById('step-description').textContent = 'Transaction completed successfully!';
             }
         }
 
@@ -753,10 +787,17 @@
             // Update tasks completed
             document.getElementById('tasks-completed').textContent = completedTasks;
             
-            // Calculate total time if demo has started
+            // Calculate total time
             if (demoStartTime) {
-                const currentTime = new Date();
-                const elapsedSeconds = Math.floor((currentTime - demoStartTime) / 1000);
+                let elapsedSeconds;
+                if (isDemoComplete && demoEndTime) {
+                    // Demo is complete, use final time
+                    elapsedSeconds = Math.floor((demoEndTime - demoStartTime) / 1000);
+                } else {
+                    // Demo is running, use current time
+                    const currentTime = new Date();
+                    elapsedSeconds = Math.floor((currentTime - demoStartTime) / 1000);
+                }
                 document.getElementById('total-time').textContent = `${elapsedSeconds}s`;
             }
         }
@@ -802,6 +843,8 @@
         function startDemo() {
             // Record demo start time
             demoStartTime = new Date();
+            demoEndTime = null;
+            isDemoComplete = false;
             
             fetch('/api/start-demo', { method: 'POST' })
                 .then(response => response.json())
@@ -816,8 +859,10 @@
         }
 
         function resetDemo() {
-            // Reset demo start time
+            // Reset demo timing
             demoStartTime = null;
+            demoEndTime = null;
+            isDemoComplete = false;
             
             // Reset the dashboard
             document.getElementById('timeline').innerHTML = `
@@ -848,9 +893,9 @@
             }
         }
 
-        // Update time every second when demo is running
+        // Update time every second when demo is running (but not when complete)
         setInterval(() => {
-            if (demoStartTime) {
+            if (demoStartTime && !isDemoComplete) {
                 updateStatistics();
             }
         }, 1000);
