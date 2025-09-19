@@ -722,8 +722,14 @@
             events.forEach(event => {
                 const eventTypeElement = event.querySelector('.event-type');
                 if (eventTypeElement) {
-                    const eventType = eventTypeElement.textContent.toLowerCase().replace(/\s+/g, '_');
-                    console.log('Found event type:', eventType);
+                    // The HTML shows "Type: ORDER PLACED" so we need to extract just the type part
+                    const fullText = eventTypeElement.textContent;
+                    console.log('Full event type text:', fullText);
+                    
+                    // Extract the part after "Type: " and convert to lowercase with underscores
+                    const eventTypeText = fullText.replace('Type:', '').trim();
+                    const eventType = eventTypeText.toLowerCase().replace(/\s+/g, '_');
+                    console.log('Processed event type:', eventType);
                     
                     if (eventType === 'order_placed') {
                         hasOrder = true;
@@ -849,7 +855,10 @@
                 const eventTitle = event.querySelector('.card-title');
                 
                 if (eventTypeElement && eventTitle) {
-                    const eventType = eventTypeElement.textContent.toLowerCase().replace(/\s+/g, '_');
+                    // Extract event type from "Type: ORDER PLACED" format
+                    const fullText = eventTypeElement.textContent;
+                    const eventTypeText = fullText.replace('Type:', '').trim();
+                    const eventType = eventTypeText.toLowerCase().replace(/\s+/g, '_');
                     const titleText = eventTitle.textContent;
                     
                     if (eventType === 'order_placed') {
@@ -1204,6 +1213,8 @@
         }
 
         function resetDemo() {
+            console.log('🔄 Resetting demo...');
+            
             // Hide completion banner
             const banner = document.getElementById('completion-banner');
             if (banner) {
@@ -1215,15 +1226,13 @@
             demoEndTime = null;
             isDemoComplete = false;
             
-            console.log('Demo reset');
-            
             // Reset current step card styling
             const currentStepCard = document.getElementById('current-step-card');
             if (currentStepCard) {
                 currentStepCard.classList.remove('completion-success');
             }
             
-            // Reset the dashboard
+            // Reset the frontend UI
             document.getElementById('timeline').innerHTML = `
                 <div class="text-center text-muted py-4">
                     <i class="fas fa-clock fa-2x mb-2"></i>
@@ -1250,6 +1259,20 @@
             if (timeElement) {
                 timeElement.textContent = '0s';
             }
+            
+            // Call the backend API to reset the step counter
+            fetch('/api/reset-demo', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('✅ Backend reset successful:', data.message);
+                    } else {
+                        console.error('❌ Backend reset failed:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error calling reset API:', error);
+                });
         }
 
         function refreshStatus() {
