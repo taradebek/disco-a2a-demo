@@ -11,6 +11,7 @@ This prototype demonstrates two AI agents collaborating to purchase office suppl
 
 ## ✨ Features
 
+### A2A Protocol Demo
 - **Real-time WebSocket Dashboard** - Live visualization of agent interactions
 - **Step-by-step Timeline** - Interactive timeline showing each A2A protocol step
 - **Live Message Logging** - Real-time message exchange between agents
@@ -18,15 +19,25 @@ This prototype demonstrates two AI agents collaborating to purchase office suppl
 - **Complete A2A Protocol Implementation** - Full implementation of the A2A specification
 - **Interactive Controls** - Start, stop, and reset scenarios from the dashboard
 
+### 🕺 Disco SDK - Multi-Agent Payment Infrastructure
+- **Complete SDK Usage Tracking** - Track who's using your SDK and how
+- **User Identification** - Email, organization, and metadata tracking
+- **Comprehensive Analytics** - Usage metrics, payment volume, error rates
+- **Real-time Dashboard** - Visual analytics with charts and insights
+- **Railway Deployment Ready** - Complete PostgreSQL schema and migrations
+- **API Key Management** - User registration, quotas, and rate limiting
+
 ## 🚀 Quick Start
 
-### Option 1: Full Demo (Recommended)
+### A2A Protocol Demo
+
+#### Option 1: Full Demo (Recommended)
 ```bash
 python3 run_demo.py
 ```
 This will start the dashboard and run the complete scenario automatically.
 
-### Option 2: Manual Setup
+#### Option 2: Manual Setup
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -38,15 +49,42 @@ python3 dashboard/app.py
 PYTHONPATH=. python3 examples/purchase_scenario.py
 ```
 
-### Option 3: Dashboard Only
+#### Option 3: Dashboard Only
 ```bash
 python3 run_demo.py --dashboard-only
 ```
 
-### Option 4: Scenario Only
+#### Option 4: Scenario Only
 ```bash
 python3 run_demo.py --scenario-only
 ```
+
+### 🕺 Disco SDK Usage Tracking
+
+#### Quick Setup
+```bash
+# Install the SDK
+pip install -e disco_sdk/
+
+# Use with tracking
+from disco_sdk import Disco
+
+disco = Disco(
+    api_key="dk_test_xxx",
+    user_email="developer@company.com",
+    organization="Your Company"
+)
+```
+
+#### Deploy to Railway
+```bash
+# See RAILWAY_DEPLOYMENT_GUIDE.md for complete setup
+railway deploy
+alembic upgrade head
+```
+
+#### View Analytics Dashboard
+Visit: `https://your-app.railway.app/analytics/dashboard`
 
 ## 📱 Dashboard
 
@@ -184,6 +222,19 @@ import requests
 response = requests.get("http://localhost:8000/api/events")
 events = response.json()
 ```
+
+## 📚 Documentation
+
+### A2A Protocol
+- [Core Concepts](docs/core-concepts.md) - Understanding the A2A protocol
+- [API Reference](docs/api-reference.md) - Complete API documentation
+- [Examples](docs/examples.md) - Usage examples and code samples
+- [Getting Started](docs/getting-started.md) - Step-by-step setup guide
+
+### 🕺 Disco SDK Usage Tracking
+- [**SDK Usage Tracking Guide**](SDK_USAGE_TRACKING_GUIDE.md) - Complete implementation guide
+- [**Railway Deployment Guide**](RAILWAY_DEPLOYMENT_GUIDE.md) - Deploy to Railway with PostgreSQL
+- [SDK README](disco_sdk/README.md) - SDK installation and usage
 
 ## 🤝 Contributing
 
